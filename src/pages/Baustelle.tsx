@@ -19,6 +19,7 @@ import {
 } from "../ui/bausteine";
 import { formatEuro, materialSumme, rohertrag, stundenSumme } from "../logic/geld";
 import { formatDatumDe, heuteIso } from "../logic/kalender";
+import ChecklisteKarte from "../ui/ChecklisteKarte";
 
 export default function BaustellePage(props: { id: string }) {
   const { baustellen } = useAppZustand();
@@ -86,6 +87,8 @@ export default function BaustellePage(props: { id: string }) {
 
   return (
     <div className="flex flex-col gap-5">
+      <ChecklisteKarte b={b} />
+
       {/* ---------- Stammdaten ---------- */}
       <section className="flex flex-col gap-3">
         <h2 className="text-[16px] font-bold uppercase tracking-wide text-dezent">

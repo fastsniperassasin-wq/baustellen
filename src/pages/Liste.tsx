@@ -6,6 +6,7 @@ import { geheZu } from "../ui/router";
 import { GrosserKnopf, StatusChip, eingabeKlasse } from "../ui/bausteine";
 import { formatZeitraum, heuteIso } from "../logic/kalender";
 import { formatEuro } from "../logic/geld";
+import { fortschritt } from "../logic/checkliste";
 
 type Sortierung = "neueste" | "aelteste" | "name" | "umsatz";
 
@@ -111,7 +112,9 @@ export default function Liste() {
       ) : (
         <>
           <ul className="flex flex-col gap-3">
-            {gefiltert.map((b) => (
+            {gefiltert.map((b) => {
+              const f = fortschritt(b.checkliste);
+              return (
               <li key={b.id}>
                 <button
                   type="button"
@@ -134,11 +137,23 @@ export default function Liste() {
                           : ""}
                       </div>
                     </div>
-                    <StatusChip status={b.status} />
+                    <div className="flex flex-none flex-col items-end gap-1">
+                      <StatusChip status={b.status} />
+                      <span
+                        className={
+                          "rounded-full px-2 py-0.5 text-[12px] font-bold " +
+                          (f.erledigt === f.gesamt
+                            ? "bg-fertig-hell text-fertig"
+                            : "bg-grund text-dezent")
+                        }
+                      >
+                        ✓ {f.erledigt}/{f.gesamt}
+                      </span>
+                    </div>
                   </div>
                 </button>
               </li>
-            ))}
+            );})}
           </ul>
           {umsatzSumme > 0 ? (
             <p className="rounded-lg bg-akzent-hell p-3 text-center text-[15px] font-bold text-akzent">

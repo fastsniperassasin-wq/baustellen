@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { Baustelle, FotoEintrag } from "../model/types";
 import { AKTUELLE_SCHEMA_VERSION } from "../model/types";
+import { leereCheckliste } from "../logic/checkliste";
 
 interface BaustellenDb extends DBSchema {
   baustellen: { key: string; value: Baustelle };
@@ -24,12 +25,22 @@ function db(): Promise<IDBPDatabase<BaustellenDb>> {
   return dbPromise;
 }
 
-/** Migrationskette für spätere Schema-Versionen. */
+/** Migrationskette für ältere Schema-Versionen. */
+type AlteBaustelle = Omit<Baustelle, "schemaVersion" | "checkliste"> & {
+  schemaVersion: number;
+  checkliste?: Baustelle["checkliste"];
+};
+
 export function migriere(b: Baustelle): Baustelle {
-  if (b.schemaVersion !== AKTUELLE_SCHEMA_VERSION) {
-    throw new Error(`Unbekannte Schema-Version ${String(b.schemaVersion)}`);
+  let x: AlteBaustelle = b;
+  if (x.schemaVersion === 1) {
+    // Version 2: Ablauf-Checkliste ergänzt
+    x = { ...x, schemaVersion: 2, checkliste: leereCheckliste() };
   }
-  return b;
+  if (x.schemaVersion !== AKTUELLE_SCHEMA_VERSION || !x.checkliste) {
+    throw new Error(`Unbekannte Schema-Version ${String(x.schemaVersion)}`);
+  }
+  return x as Baustelle;
 }
 
 export async function alleBaustellen(): Promise<Baustelle[]> {

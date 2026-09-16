@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { Baustelle } from "../model/types";
+import { leereCheckliste } from "../logic/checkliste";
 import * as db from "./db";
 
 export interface AppZustand {
@@ -37,7 +38,7 @@ export function neueId(): string {
 export function neueBaustelle(beginnIso: string): Baustelle {
   const jetzt = new Date().toISOString();
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: neueId(),
     angelegtAm: jetzt,
     geaendertAm: jetzt,
@@ -49,6 +50,7 @@ export function neueBaustelle(beginnIso: string): Baustelle {
     status: "geplant",
     beginn: beginnIso,
     ende: "",
+    checkliste: leereCheckliste(),
     material: [],
     zeiten: [],
     fotoIds: [],
