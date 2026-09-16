@@ -1,4 +1,4 @@
-import type { Baustelle, FotoEintrag } from "../model/types";
+import type { Baustelle, FotoEintrag, Merker } from "../model/types";
 import { blobZuDataUrl } from "./bild";
 import * as db from "../store/db";
 
@@ -7,19 +7,22 @@ interface SicherungsDatei {
   app: "baustellen";
   exportiertAm: string;
   baustellen: Baustelle[];
+  merkliste?: Merker[];
   fotos: { id: string; baustelleId: string; jpegDataUrl: string }[];
 }
 
 export async function datenExportieren(): Promise<void> {
-  const [baustellen, fotos] = await Promise.all([
+  const [baustellen, fotos, merkliste] = await Promise.all([
     db.alleBaustellen(),
     db.alleFotos(),
+    db.alleMerker(),
   ]);
   const daten: SicherungsDatei = {
     formatVersion: 1,
     app: "baustellen",
     exportiertAm: new Date().toISOString(),
     baustellen,
+    merkliste,
     fotos: await Promise.all(
       fotos.map(async (f) => ({
         id: f.id,
@@ -71,5 +74,6 @@ export async function datenImportieren(datei: File): Promise<void> {
   await db.ersetzeAlles({
     baustellen: daten.baustellen.map(db.migriere),
     fotos,
+    merkliste: daten.merkliste ?? [],
   });
 }

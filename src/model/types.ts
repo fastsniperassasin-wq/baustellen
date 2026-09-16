@@ -69,6 +69,13 @@ export interface FotoEintrag {
   blob: Blob;
 }
 
+/** Kurz notierte, noch nicht eingeplante Baustelle („Merkliste“). */
+export interface Merker {
+  id: string;
+  text: string;
+  notiertAm: string; // ISO
+}
+
 export const AKTUELLE_SCHEMA_VERSION = 2 as const;
 
 export const STATUS_TEXT: Record<BaustellenStatus, string> = {

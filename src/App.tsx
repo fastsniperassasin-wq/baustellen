@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
-import { ladeAlles } from "./store/store";
+import { ladeAlles, useAppZustand } from "./store/store";
 import { geheZu, useRoute } from "./ui/router";
 import Kalender from "./pages/Kalender";
 import Liste from "./pages/Liste";
+import Merkliste from "./pages/Merkliste";
 import BaustellePage from "./pages/Baustelle";
 import Sicherung from "./pages/Sicherung";
 
 const MENUE = [
   { titel: "Kalender", symbol: "📅", route: { name: "kalender" } as const },
   { titel: "Baustellen-Liste", symbol: "📋", route: { name: "liste" } as const },
+  { titel: "Noch zu planen", symbol: "📝", route: { name: "merkliste" } as const },
   { titel: "Datensicherung", symbol: "💾", route: { name: "sicherung" } as const },
 ];
 
 export default function App() {
   const route = useRoute();
+  const { merkliste } = useAppZustand();
   const [menueOffen, setMenueOffen] = useState(false);
 
   useEffect(() => {
@@ -23,11 +26,13 @@ export default function App() {
   const titel =
     route.name === "liste"
       ? "Baustellen"
-      : route.name === "sicherung"
-        ? "Datensicherung"
-        : route.name === "baustelle"
-          ? "Baustelle"
-          : "Kalender";
+      : route.name === "merkliste"
+        ? "Noch zu planen"
+        : route.name === "sicherung"
+          ? "Datensicherung"
+          : route.name === "baustelle"
+            ? "Baustelle"
+            : "Kalender";
 
   return (
     <div className="mx-auto max-w-xl px-3 pb-8">
@@ -94,7 +99,12 @@ export default function App() {
                     <span aria-hidden className="text-[20px]">
                       {m.symbol}
                     </span>
-                    {m.titel}
+                    <span className="flex-1">{m.titel}</span>
+                    {m.route.name === "merkliste" && merkliste.length > 0 ? (
+                      <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-akzent px-2 text-[13px] font-bold text-white">
+                        {merkliste.length}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -109,6 +119,8 @@ export default function App() {
 
       {route.name === "liste" ? (
         <Liste />
+      ) : route.name === "merkliste" ? (
+        <Merkliste />
       ) : route.name === "sicherung" ? (
         <Sicherung />
       ) : route.name === "baustelle" ? (

@@ -1,14 +1,15 @@
 import { useSyncExternalStore } from "react";
-import type { Baustelle } from "../model/types";
+import type { Baustelle, Merker } from "../model/types";
 import { leereCheckliste } from "../logic/checkliste";
 import * as db from "./db";
 
 export interface AppZustand {
   geladen: boolean;
   baustellen: Baustelle[];
+  merkliste: Merker[];
 }
 
-let zustand: AppZustand = { geladen: false, baustellen: [] };
+let zustand: AppZustand = { geladen: false, baustellen: [], merkliste: [] };
 
 const hoerer = new Set<() => void>();
 const melde = () => {
@@ -25,7 +26,11 @@ export function useAppZustand(): AppZustand {
 }
 
 export async function ladeAlles(): Promise<void> {
-  zustand = { geladen: true, baustellen: await db.alleBaustellen() };
+  const [baustellen, merkliste] = await Promise.all([
+    db.alleBaustellen(),
+    db.alleMerker(),
+  ]);
+  zustand = { geladen: true, baustellen, merkliste };
   melde();
 }
 
@@ -112,4 +117,40 @@ export async function loescheBaustelle(id: string): Promise<void> {
     baustellen: zustand.baustellen.filter((b) => b.id !== id),
   };
   melde();
+}
+
+/* ---------- Merkliste („Noch zu planen“) ---------- */
+
+export async function merkerHinzufuegen(text: string): Promise<void> {
+  const m: Merker = {
+    id: neueId(),
+    text: text.trim(),
+    notiertAm: new Date().toISOString(),
+  };
+  if (!m.text) return;
+  await db.speichereMerker(m);
+  zustand = { ...zustand, merkliste: [...zustand.merkliste, m] };
+  melde();
+}
+
+export async function merkerLoeschen(id: string): Promise<void> {
+  await db.loescheMerker(id);
+  zustand = {
+    ...zustand,
+    merkliste: zustand.merkliste.filter((m) => m.id !== id),
+  };
+  melde();
+}
+
+/** Merker in eine echte Baustelle verwandeln (Beginn = heute, anpassbar). */
+export async function merkerEinplanen(
+  id: string,
+  beginnIso: string,
+): Promise<Baustelle | undefined> {
+  const m = zustand.merkliste.find((x) => x.id === id);
+  if (!m) return undefined;
+  const b = await erstelleBaustelle(beginnIso);
+  aenderBaustelle(b.id, (x) => ({ ...x, name: m.text }));
+  await merkerLoeschen(id);
+  return zustand.baustellen.find((x) => x.id === b.id);
 }

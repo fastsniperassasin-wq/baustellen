@@ -1,5 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import type { Baustelle, FotoEintrag } from "../model/types";
+import type { Baustelle, FotoEintrag, Merker } from "../model/types";
 import { AKTUELLE_SCHEMA_VERSION } from "../model/types";
 import { leereCheckliste } from "../logic/checkliste";
 
@@ -10,16 +10,24 @@ interface BaustellenDb extends DBSchema {
     value: FotoEintrag;
     indexes: { nachBaustelle: string };
   };
+  merkliste: { key: string; value: Merker };
 }
 
 let dbPromise: Promise<IDBPDatabase<BaustellenDb>> | null = null;
 
 function db(): Promise<IDBPDatabase<BaustellenDb>> {
-  dbPromise ??= openDB<BaustellenDb>("baustellen-app", 1, {
+  dbPromise ??= openDB<BaustellenDb>("baustellen-app", 2, {
     upgrade(d) {
-      d.createObjectStore("baustellen", { keyPath: "id" });
-      const fotos = d.createObjectStore("fotos", { keyPath: "id" });
-      fotos.createIndex("nachBaustelle", "baustelleId");
+      if (!d.objectStoreNames.contains("baustellen")) {
+        d.createObjectStore("baustellen", { keyPath: "id" });
+      }
+      if (!d.objectStoreNames.contains("fotos")) {
+        const fotos = d.createObjectStore("fotos", { keyPath: "id" });
+        fotos.createIndex("nachBaustelle", "baustelleId");
+      }
+      if (!d.objectStoreNames.contains("merkliste")) {
+        d.createObjectStore("merkliste", { keyPath: "id" });
+      }
     },
   });
   return dbPromise;
@@ -81,15 +89,31 @@ export async function alleFotos(): Promise<FotoEintrag[]> {
   return (await db()).getAll("fotos");
 }
 
+export async function alleMerker(): Promise<Merker[]> {
+  const alle = await (await db()).getAll("merkliste");
+  return alle.sort((a, b) => a.notiertAm.localeCompare(b.notiertAm));
+}
+
+export async function speichereMerker(m: Merker): Promise<void> {
+  await (await db()).put("merkliste", m);
+}
+
+export async function loescheMerker(id: string): Promise<void> {
+  await (await db()).delete("merkliste", id);
+}
+
 export async function ersetzeAlles(daten: {
   baustellen: Baustelle[];
   fotos: FotoEintrag[];
+  merkliste: Merker[];
 }): Promise<void> {
   const d = await db();
-  const tx = d.transaction(["baustellen", "fotos"], "readwrite");
+  const tx = d.transaction(["baustellen", "fotos", "merkliste"], "readwrite");
   await tx.objectStore("baustellen").clear();
   await tx.objectStore("fotos").clear();
+  await tx.objectStore("merkliste").clear();
   for (const b of daten.baustellen) await tx.objectStore("baustellen").put(b);
   for (const f of daten.fotos) await tx.objectStore("fotos").put(f);
+  for (const m of daten.merkliste) await tx.objectStore("merkliste").put(m);
   await tx.done;
 }

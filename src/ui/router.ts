@@ -3,12 +3,14 @@ import { useSyncExternalStore } from "react";
 export type Route =
   | { name: "kalender" }
   | { name: "liste" }
+  | { name: "merkliste" }
   | { name: "sicherung" }
   | { name: "baustelle"; id: string };
 
 function parse(hash: string): Route {
   const teile = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   if (teile[0] === "liste") return { name: "liste" };
+  if (teile[0] === "merkliste") return { name: "merkliste" };
   if (teile[0] === "sicherung") return { name: "sicherung" };
   if (teile[0] === "b" && teile[1]) return { name: "baustelle", id: teile[1] };
   return { name: "kalender" };
@@ -39,6 +41,9 @@ export function geheZu(route: Route): void {
       break;
     case "liste":
       window.location.hash = "#/liste";
+      break;
+    case "merkliste":
+      window.location.hash = "#/merkliste";
       break;
     case "sicherung":
       window.location.hash = "#/sicherung";
